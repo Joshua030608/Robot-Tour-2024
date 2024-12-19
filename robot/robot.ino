@@ -7,7 +7,7 @@
 
 #define VERSION           "D4 2.1"
 
-#define DISPLAY_PRESENT        0  // set to 1 if the 20x4 I2C Display is present
+#define DISPLAY_PRESENT        1  // set to 1 if the 20x4 I2C Display is present
 
 //
 //  Board: Ardunio Uno
@@ -29,6 +29,7 @@
 
 
 //************************* ADJUST THE FOLLOWING TO MATCH YOUR ROBOT ****************************
+//NEED TO ADJUST THESE VALUES WHEN THE ROBOT IS BUILT
 
 #define ENCODER_COUNTS_PER_REV  540   // Set to the number of encoder pulses per wheel revolution
 #define MM_PER_REV              220   // Set to the number of mm per wheel revolution (Hence : Diameter * Pi)
@@ -160,56 +161,22 @@ void loadCommandQueue() {
   //    SETTING THE SPEEDS ABOVE THE MOTOR'S MAXIMUM SPEED WILL CAUSE STRANGE RESULTS
       cmdQueue.add(VEHICLE_SET_MOVE_SPEED,500);     // Speed used for forward movements  
       cmdQueue.add(VEHICLE_SET_TURN_SPEED,300);     // Speed used for left or right turns
-      cmdQueue.add(VEHICLE_SET_ACCEL,400);         // smaller is softer   larger is quicker and less accurate moves
+      cmdQueue.add(VEHICLE_SET_ACCEL,400);         // smaller is softer; larger is quicker and less accurate moves
 
-        // Example list of robot movements
-        // This block is modified for each tournament
-      cmdQueue.add(VEHICLE_FORWARD,500);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD,500);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD,500);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD,500);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-        
-
-      // cmdQueue.add(VEHICLE_FORWARD,830); 
-      // cmdQueue.add(VEHICLE_TURN_LEFT);
-      // cmdQueue.add(VEHICLE_FORWARD,500); 
-      // cmdQueue.add(VEHICLE_TURN_LEFT);
-      // cmdQueue.add(VEHICLE_TURN_LEFT);
-      // cmdQueue.add(VEHICLE_FORWARD,500); 
-      // cmdQueue.add(VEHICLE_TURN_RIGHT);
-      // cmdQueue.add(VEHICLE_FORWARD,500); 
-      // cmdQueue.add(VEHICLE_TURN_LEFT);
-      // cmdQueue.add(VEHICLE_FORWARD,1000); 
-      // cmdQueue.add(VEHICLE_TURN_LEFT);
-      // cmdQueue.add(VEHICLE_FORWARD,1000); 
-      // cmdQueue.add(VEHICLE_TURN_LEFT);
-      // cmdQueue.add(VEHICLE_FORWARD,1500); 
-      // cmdQueue.add(VEHICLE_TURN_RIGHT);
-      // cmdQueue.add(VEHICLE_FORWARD,500); 
-      // cmdQueue.add(VEHICLE_TURN_RIGHT);
-      // cmdQueue.add(VEHICLE_TURN_RIGHT);
-      // cmdQueue.add(VEHICLE_FORWARD,500); 
-      // cmdQueue.add(VEHICLE_TURN_LEFT);
-      // cmdQueue.add(VEHICLE_FORWARD,500); 
-      // cmdQueue.add(VEHICLE_TURN_LEFT);
-      // cmdQueue.add(VEHICLE_FORWARD,500); 
-      // cmdQueue.add(VEHICLE_TURN_RIGHT);
-      // cmdQueue.add(VEHICLE_FORWARD,420); 
+      //THIS IS WHERE THE CODE IS UPDATED!
+      //Distance is in mm. in = mm * 25.4
+      // 2 feet = 609.6
+      cmdQueue.add(VEHICLE_FORWARD, 609.6);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 609.6);
 
 
-          // This MUST be the last command.  
+      // This MUST be the last command.  
       cmdQueue.add(VEHICLE_FINISHED);
 
 }
 
 //======================================================================================
-// Motion object (like a library) that calculates the acceleration used for motor speed
-// control.
-// 
 // Distance is encoder pulses
 // Speed is encoder pulses per second
 // Accel is encoder pulses per second^2
@@ -761,8 +728,8 @@ void loop() {
   mtrLeft.updateMotion(usecElapsed);
   mtrRight.updateMotion(usecElapsed);
 
-    // updates the display every 200000us or 0.2 seconds
-  if (msTimerPrint > 200000) {
+    // updates the display every 100000us or 0.1 seconds
+  if (msTimerPrint > 100000) {
     if (DISPLAY_PRESENT) { updateDisplay(); }
     msTimerPrint = 0;
   }
@@ -803,7 +770,7 @@ void loop() {
         cmdQueue.next();
       }
       timerSonicRange += usecElapsed;
-      if (timerSonicRange > 1500000) {
+      if (timerSonicRange > 1000000) {
         timerSonicRange = 0;
         triggerRangeFinder();
       }
