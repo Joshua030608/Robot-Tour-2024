@@ -478,7 +478,8 @@ void triggerRangeFinder() {
     delayMicroseconds(10);
     digitalWrite(PIN_SONIC_TRIGGER, LOW);
     int pcount = pulseIn(PIN_SONIC_PULSE, HIGH);
-    sonicDistance = float(pcount) * 0.34 / 2.0;
+    //0.343 is the speed of sound in air divided by 2 for the round trip
+    sonicDistance = float(pcount) * 0.343 / 2.0;
     //Serial.print(F("Sonic pcount = "));
     //Serial.print(pcount);
     //Serial.print(F("  mm = "));
@@ -599,6 +600,7 @@ void updateDisplay() {
     case 3 :
         display.setCursor(4,2);
         display.print(sonicDistance,1);
+        //Probably in mm but need to check
         display.print("cm  ");
         break;
     case 4 :
