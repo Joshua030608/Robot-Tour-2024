@@ -7,7 +7,7 @@
 
 #define VERSION           "D4 2.1"
 
-#define DISPLAY_PRESENT        1  // set to 1 if the 20x4 I2C Display is present
+#define DISPLAY_PRESENT        0  // set to 1 if the 20x4 I2C Display is present
 
 //
 //  Board: Ardunio Uno
@@ -32,8 +32,8 @@
 //NEED TO ADJUST THESE VALUES WHEN THE ROBOT IS BUILT
 
 #define ENCODER_COUNTS_PER_REV  540   // Set to the number of encoder pulses per wheel revolution
-#define MM_PER_REV              220   // Set to the number of mm per wheel revolution (Hence : Diameter * Pi)
-#define ENCODER_COUNTS_90_DEG   200   // Set to the number of encoder pulses to make a 90 degree turn
+#define MM_PER_REV              188   // Set to the number of mm per wheel revolution (Hence : Diameter * Pi)
+#define ENCODER_COUNTS_90_DEG   475   // Set to the number of encoder pulses to make a 90 degree turn
 #define SPEED_MIN               120    // Minimum speed (pulses/second) use at the end of individual moves
 
 
@@ -135,6 +135,7 @@ Command cmdQueue;
 #define VEHICLE_START_WAIT      1       // Wait for the start button to be pressed
 #define VEHICLE_START           2       // First motion command after button press
 #define VEHICLE_FORWARD         10
+#define VEHICLE_BACKWARD        20 // added this command
 #define VEHICLE_TURN_RIGHT      40
 #define VEHICLE_TURN_LEFT       50
 #define VEHICLE_SET_MOVE_SPEED  101
@@ -159,16 +160,28 @@ void loadCommandQueue() {
   // Speed is encoder pulses per second.
   // There is a maximum speed.  Testing will be required to learn this speed.
   //    SETTING THE SPEEDS ABOVE THE MOTOR'S MAXIMUM SPEED WILL CAUSE STRANGE RESULTS
-      cmdQueue.add(VEHICLE_SET_MOVE_SPEED,500);     // Speed used for forward movements  
-      cmdQueue.add(VEHICLE_SET_TURN_SPEED,300);     // Speed used for left or right turns
-      cmdQueue.add(VEHICLE_SET_ACCEL,400);         // smaller is softer; larger is quicker and less accurate moves
+      cmdQueue.add(VEHICLE_SET_MOVE_SPEED, 12000);     // Speed used for forward movements  
+      cmdQueue.add(VEHICLE_SET_TURN_SPEED, 600);     // Speed used for left or right turns
+      cmdQueue.add(VEHICLE_SET_ACCEL, 700);         // smaller is softer; larger is quicker and less accurate moves
 
       //THIS IS WHERE THE CODE IS UPDATED!
       //Distance is in mm. in = mm * 25.4
       // 2 feet = 609.6
-      cmdQueue.add(VEHICLE_FORWARD, 609.6);
+      //mm is not correct
+      //11 units per centimeter
+      /*cmdQueue.add(VEHICLE_FORWARD, 275);
       cmdQueue.add(VEHICLE_TURN_RIGHT);
-      cmdQueue.add(VEHICLE_FORWARD, 609.6);
+      cmdQueue.add(VEHICLE_FORWARD, 550);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 550);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 1000);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 550);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 400);*/
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_BACKWARD, 500);
 
 
       // This MUST be the last command.  
@@ -571,6 +584,9 @@ void updateDisplay() {
             case VEHICLE_FORWARD :
               display.print(F("FORWARD        "));
               break;
+            case VEHICLE_BACKWARD :
+              display.print(F("BACKWARD       "));
+              break;
             case VEHICLE_TURN_RIGHT :
               display.print(F("TURN RIGHT     "));
               break;
@@ -799,6 +815,22 @@ void loop() {
         cmdQueue.next();
       }
       break;
+
+    case VEHICLE_BACKWARD : 
+    if (newCmd) {
+      distance = ((long) cmdQueue.getParameter1() * (long) ENCODER_COUNTS_PER_REV / (long) MM_PER_REV);
+      speed = speedFwd;
+      mtrLeft.startMove(distance,speed * -1);
+      mtrRight.startMove(distance,speed * -1);
+      setMotorOutputs();
+    }
+
+    if (mtrLeft.isStopped() && mtrRight.isStopped()) {
+      setMotorOutputs();
+      cmdQueue.next();
+    }
+    break;
+
     case VEHICLE_TURN_RIGHT :
       if (newCmd) {
         distance = ENCODER_COUNTS_90_DEG;
@@ -815,7 +847,7 @@ void loop() {
       break;
     case VEHICLE_TURN_LEFT :
       if (newCmd) {
-        distance = ENCODER_COUNTS_90_DEG;
+        distance = (ENCODER_COUNTS_90_DEG - 225);
         speed = speedTurn;
         mtrLeft.startMove(distance,speed * -1);
         mtrRight.startMove(distance,speed);
