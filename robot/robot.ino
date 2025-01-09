@@ -32,9 +32,13 @@
 //NEED TO ADJUST THESE VALUES WHEN THE ROBOT IS BUILT
 
 #define ENCODER_COUNTS_PER_REV  540   // Set to the number of encoder pulses per wheel revolution
-#define MM_PER_REV              188   // Set to the number of mm per wheel revolution (Hence : Diameter * Pi)
-#define ENCODER_COUNTS_90_DEG   475   // Set to the number of encoder pulses to make a 90 degree turn
+#define MM_PER_REV              283   // Set to the number of mm per wheel revolution (Hence : Diameter * Pi)
+#define ENCODER_COUNTS_90_DEG   275   // Set to the number of encoder pulses to make a 90 degree turn
 #define SPEED_MIN               120    // Minimum speed (pulses/second) use at the end of individual moves
+
+#define RIGHT_ENCODER_SCALE 1.17161733572
+volatile float rightEncoderAccum = 0.0;
+int turnCount = 0;
 
 
 LiquidCrystal_I2C display(0x27,20,4);  // set the LCD address to 0x27 for a 20 chars and 4 line display
@@ -160,7 +164,7 @@ void loadCommandQueue() {
   // Speed is encoder pulses per second.
   // There is a maximum speed.  Testing will be required to learn this speed.
   //    SETTING THE SPEEDS ABOVE THE MOTOR'S MAXIMUM SPEED WILL CAUSE STRANGE RESULTS
-      cmdQueue.add(VEHICLE_SET_MOVE_SPEED, 12000);     // Speed used for forward movements  
+      cmdQueue.add(VEHICLE_SET_MOVE_SPEED, 1500);     // Speed used for forward movements  
       cmdQueue.add(VEHICLE_SET_TURN_SPEED, 600);     // Speed used for left or right turns
       cmdQueue.add(VEHICLE_SET_ACCEL, 700);         // smaller is softer; larger is quicker and less accurate moves
 
@@ -169,19 +173,10 @@ void loadCommandQueue() {
       // 2 feet = 609.6
       //mm is not correct
       //11 units per centimeter
-      /*cmdQueue.add(VEHICLE_FORWARD, 275);
-      cmdQueue.add(VEHICLE_TURN_RIGHT);
-      cmdQueue.add(VEHICLE_FORWARD, 550);
+      cmdQueue.add(VEHICLE_FORWARD, 1100);
+      cmdQueue.add(VEHICLE_BACKWARD, 825);
       cmdQueue.add(VEHICLE_TURN_LEFT);
       cmdQueue.add(VEHICLE_FORWARD, 550);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 1000);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 550);
-      cmdQueue.add(VEHICLE_TURN_RIGHT);
-      cmdQueue.add(VEHICLE_FORWARD, 400);*/
-      cmdQueue.add(VEHICLE_FORWARD, 500);
-      cmdQueue.add(VEHICLE_BACKWARD, 500);
 
 
       // This MUST be the last command.  
@@ -466,7 +461,14 @@ void encoderIntLeft()  {
 //---------------------------------------------------------------------------------------
 // Interupt function for counting right motor encoder pulses
 void encoderIntRight()  { 
-  mtrRight.incrEncoder();
+  // Accumulate partial pulses
+  rightEncoderAccum += RIGHT_ENCODER_SCALE;
+
+  // Round to nearest integer
+  long scaledCount = (long)(rightEncoderAccum + 0.5);
+
+  // Update the right motor's count
+  mtrRight.countEncoder = scaledCount;
 }
 
 
@@ -639,13 +641,20 @@ void updateDisplay() {
 //======================================================================================
 void setup() {
 
+  rightEncoderAccum = 0.0;
+  mtrRight.countEncoder = 0;
+  turnCount = 0;
+
   pinMode(PIN_LED, OUTPUT);
   flagLED = false;
+
+  Serial.begin(115200); // ADDED
+  delay(50); // ADDED
+  Serial.println(F("Setup()...")); // ADDED
 
   // Only uncomment one motor at a time to use the Serial Plotter function to tune the PID loop
   //mtrLeft.debugOn();
   //mtrRight.debugOn();
-
   if (mtrLeft.debugState() || mtrRight.debugState()) {
     Serial.begin(115200);
     Serial.println(F("Setup()..."));
@@ -749,6 +758,14 @@ void loop() {
     // updates the display every 100000us or 0.1 seconds
   if (msTimerPrint > 100000) {
     if (DISPLAY_PRESENT) { updateDisplay(); }
+
+    //--- ADDED: Print the speeds of each motor to Serial
+    /*Serial.print(F("PWMLOOPP: "));
+    Serial.print(mtrLeft.pwmLoopP);
+    Serial.print(F("  |  PWMLOOPP: "));
+    Serial.println(mtrRight.pwmLoopP);*/
+    //--- END ADDED
+
     msTimerPrint = 0;
   }
   msTimerPrint += usecElapsed;
@@ -810,7 +827,11 @@ void loop() {
         setMotorOutputs();
       }
       
-      if (mtrLeft.isStopped() && mtrRight.isStopped()) {
+      if (mtrLeft.isStopped() || mtrRight.isStopped()) {
+        mtrLeft.stop();
+        mtrRight.stop();
+        rightEncoderAccum = 0;
+        mtrRight.countEncoder = 0;
         setMotorOutputs();
         cmdQueue.next();
       }
@@ -825,7 +846,11 @@ void loop() {
       setMotorOutputs();
     }
 
-    if (mtrLeft.isStopped() && mtrRight.isStopped()) {
+    if (mtrLeft.isStopped() || mtrRight.isStopped()) {
+      mtrLeft.stop();
+      mtrRight.stop();
+      rightEncoderAccum = 0;
+      mtrRight.countEncoder = 0;
       setMotorOutputs();
       cmdQueue.next();
     }
@@ -833,7 +858,8 @@ void loop() {
 
     case VEHICLE_TURN_RIGHT :
       if (newCmd) {
-        distance = ENCODER_COUNTS_90_DEG;
+        distance = (ENCODER_COUNTS_90_DEG + (turnCount * 10));
+        turnCount++;
         speed = speedTurn;
         mtrLeft.startMove(distance,speed);
         mtrRight.startMove(distance,speed * -1);
@@ -841,13 +867,18 @@ void loop() {
       }
 
       if (mtrLeft.isStopped() && mtrRight.isStopped()) {
+        mtrLeft.stop();
+        mtrRight.stop();
+        rightEncoderAccum = 0;
+        mtrRight.countEncoder = 0;
         setMotorOutputs();
         cmdQueue.next();
       }      
       break;
     case VEHICLE_TURN_LEFT :
       if (newCmd) {
-        distance = (ENCODER_COUNTS_90_DEG - 225);
+        distance = (ENCODER_COUNTS_90_DEG - (turnCount * 15) - 15);
+        turnCount++;
         speed = speedTurn;
         mtrLeft.startMove(distance,speed * -1);
         mtrRight.startMove(distance,speed);
@@ -855,6 +886,10 @@ void loop() {
       }
 
       if (mtrLeft.isStopped() && mtrRight.isStopped()) {
+        mtrLeft.stop();
+        mtrRight.stop();
+        rightEncoderAccum = 0;
+        mtrRight.countEncoder = 0;
         setMotorOutputs();
         cmdQueue.next();
       }      
