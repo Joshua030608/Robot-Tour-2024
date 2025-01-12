@@ -33,10 +33,10 @@
 
 #define ENCODER_COUNTS_PER_REV  540   // Set to the number of encoder pulses per wheel revolution
 #define MM_PER_REV              283   // Set to the number of mm per wheel revolution (Hence : Diameter * Pi)
-#define ENCODER_COUNTS_90_DEG   275   // Set to the number of encoder pulses to make a 90 degree turn
+#define ENCODER_COUNTS_90_DEG   270   // Set to the number of encoder pulses to make a 90 degree turn
 #define SPEED_MIN               120    // Minimum speed (pulses/second) use at the end of individual moves
 
-#define RIGHT_ENCODER_SCALE 1.17161733572
+#define RIGHT_ENCODER_SCALE 1.17161733572 //Changed 1.17... to 1.18
 volatile float rightEncoderAccum = 0.0;
 int turnCount = 0;
 
@@ -169,16 +169,55 @@ void loadCommandQueue() {
       cmdQueue.add(VEHICLE_SET_ACCEL, 700);         // smaller is softer; larger is quicker and less accurate moves
 
       //THIS IS WHERE THE CODE IS UPDATED!
-      //Distance is in mm. in = mm * 25.4
-      // 2 feet = 609.6
-      //mm is not correct
+      //Distance is in units
       //11 units per centimeter
-      cmdQueue.add(VEHICLE_FORWARD, 1100);
-      cmdQueue.add(VEHICLE_BACKWARD, 825);
+      // 1/2 Square - 275 Units
+      // 1 Square - 550 Units
+      // 2 Squares - 1100 Units
+
+      //cmdQueue.add(VEHICLE_FORWARD, 550);
+      //cmdQueue.add(VEHICLE_BACKWARD, 550);
+      //cmdQueue.add(VEHICLE_TURN_RIGHT);
+      //cmdQueue.add(VEHICLE_TURN_LEFT);
+
+      cmdQueue.add(VEHICLE_FORWARD, 300);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
       cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 550);
-
-
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 1000);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 400);
+      cmdQueue.add(VEHICLE_BACKWARD, 400);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 1450);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 1000);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 400);
+      cmdQueue.add(VEHICLE_BACKWARD, 400);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 1000);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 400);
+      cmdQueue.add(VEHICLE_BACKWARD, 400);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 1450);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 1000);
       // This MUST be the last command.  
       cmdQueue.add(VEHICLE_FINISHED);
 
@@ -858,8 +897,10 @@ void loop() {
 
     case VEHICLE_TURN_RIGHT :
       if (newCmd) {
-        distance = (ENCODER_COUNTS_90_DEG + (turnCount * 10));
-        turnCount++;
+        distance = (ENCODER_COUNTS_90_DEG + (turnCount * 3)); // changed from 7 to 3
+        if (turnCount != 2) {
+          turnCount++;
+        }
         speed = speedTurn;
         mtrLeft.startMove(distance,speed);
         mtrRight.startMove(distance,speed * -1);
@@ -877,8 +918,10 @@ void loop() {
       break;
     case VEHICLE_TURN_LEFT :
       if (newCmd) {
-        distance = (ENCODER_COUNTS_90_DEG - (turnCount * 15) - 15);
-        turnCount++;
+        distance = (ENCODER_COUNTS_90_DEG - (turnCount * 5) - 15);
+        if (turnCount != 2) {
+          turnCount++;
+        }
         speed = speedTurn;
         mtrLeft.startMove(distance,speed * -1);
         mtrRight.startMove(distance,speed);
