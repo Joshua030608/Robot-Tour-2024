@@ -1,0 +1,40 @@
+/* cmdQueue.add(VEHICLE_FORWARD, 300);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 1000);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 400);
+      cmdQueue.add(VEHICLE_BACKWARD, 400);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 1450);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 1000);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 400);
+      cmdQueue.add(VEHICLE_BACKWARD, 400);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 1000);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 400);
+      cmdQueue.add(VEHICLE_BACKWARD, 400);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 500);
+      cmdQueue.add(VEHICLE_TURN_RIGHT);
+      cmdQueue.add(VEHICLE_FORWARD, 1450);
+      cmdQueue.add(VEHICLE_TURN_LEFT);
+      cmdQueue.add(VEHICLE_FORWARD, 1000); */
+
+//This was the final path for the test track (built physically) from the rules of the event

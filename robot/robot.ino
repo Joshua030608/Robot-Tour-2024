@@ -1,19 +1,18 @@
-//========================================================================
-// Robot Tour 2024 Science Olympiad
-//========================================================================
+// Robot Tour 2025 Science Olympiad
+//Joshua Ford & Aliza Azhar
+
 #include <Arduino.h>
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>    // this library is needed for the 20x4 display
+#include <LiquidCrystal_I2C.h>
 
 #define VERSION           "D4 2.1"
 
-#define DISPLAY_PRESENT        0  // set to 1 if the 20x4 I2C Display is present
+#define DISPLAY_PRESENT        0  // set to 1 if the 20x4 I2C Display is present & wired (do not do this otherwise, the code will break)
 
-//
-//  Board: Ardunio Uno
-//  DEFINE ALL I/O PIN CONNECTIONS
-//    *** DO NOT CHANGE ***
-//
+
+//  Board: Ardunio Uno R3
+//  I/O PIN CONNECTIONS BELOW (DO NOT CHANGE)
+
 #define PIN_MTR1_ENCA          2
 #define PIN_MTR2_ENCA          3
 #define PIN_PB_START           4
@@ -28,20 +27,21 @@
 #define PIN_LED               13
 
 
-//************************* ADJUST THE FOLLOWING TO MATCH YOUR ROBOT ****************************
-//NEED TO ADJUST THESE VALUES WHEN THE ROBOT IS BUILT
+//Continue to fine tune these values (maybe with new motor?)
 
-#define ENCODER_COUNTS_PER_REV  540   // Set to the number of encoder pulses per wheel revolution
-#define MM_PER_REV              283   // Set to the number of mm per wheel revolution (Hence : Diameter * Pi)
-#define ENCODER_COUNTS_90_DEG   270   // Set to the number of encoder pulses to make a 90 degree turn
+#define ENCODER_COUNTS_PER_REV  540   // Number of encoder pulses per wheel revolution
+#define MM_PER_REV              283   // Number of mm per wheel revolution (Diameter * Pi)
+#define ENCODER_COUNTS_90_DEG   270   // Number of encoder pulses to make a 90 degree turn
 #define SPEED_MIN               120    // Minimum speed (pulses/second) use at the end of individual moves
 
-#define RIGHT_ENCODER_SCALE 1.17161733572 //Changed 1.17... to 1.18
+#define RIGHT_ENCODER_SCALE 1.17161733572
 volatile float rightEncoderAccum = 0.0;
 int turnCount = 0;
+//Above three lines are the current solution for the problematic right motor encoder, a new motor should fix this issue
+//If new motor has working encoder, remove rightEncoderAccum
 
 
-LiquidCrystal_I2C display(0x27,20,4);  // set the LCD address to 0x27 for a 20 chars and 4 line display
+LiquidCrystal_I2C display(0x27,20,4);
 
 unsigned long usLast;
 long usecElapsed;
@@ -73,11 +73,8 @@ unsigned long timerPBStartOff;
 
 unsigned long timerDelay;
 
-#define MAX_COMMANDS    60        // Maximum number of motion commands allowed
+#define MAX_COMMANDS    60
 
-//======================================================================================
-// Command object is used to hold a list of commands to be executed
-//======================================================================================
 class Command
 {
   private:
@@ -132,14 +129,13 @@ class Command
 
 Command cmdQueue;
 
-//
+
 //  List of possible vehicle motion commands
 //   -- Additional motion commands can be added which will require code to execute
-//
 #define VEHICLE_START_WAIT      1       // Wait for the start button to be pressed
 #define VEHICLE_START           2       // First motion command after button press
 #define VEHICLE_FORWARD         10
-#define VEHICLE_BACKWARD        20 // added this command
+#define VEHICLE_BACKWARD        20      // Added this command (reverse of VEHICLE_FORWARD)
 #define VEHICLE_TURN_RIGHT      40
 #define VEHICLE_TURN_LEFT       50
 #define VEHICLE_SET_MOVE_SPEED  101
@@ -149,85 +145,53 @@ Command cmdQueue;
 #define VEHICLE_STOP            1000
 #define VEHICLE_ABORT           2000    // Used to abort the current movement list and stop the robot
 
-//======================================================================================
-//======================================================================================
 // Loads the command queue with the robots commands to be executed during a run
-//======================================================================================
-//======================================================================================
+
 void loadCommandQueue() {
 
   cmdQueue.clear();
-  cmdQueue.add(VEHICLE_START_WAIT);     // do not change this line - waits for start pushbutton
-  cmdQueue.add(VEHICLE_START);          // do not change this line
+  cmdQueue.add(VEHICLE_START_WAIT);     // DO NOT REMOVE
+  cmdQueue.add(VEHICLE_START);          // DO NOT REMOVE
 
   // Define robot movement speeds
-  // Speed is encoder pulses per second.
-  // There is a maximum speed.  Testing will be required to learn this speed.
-  //    SETTING THE SPEEDS ABOVE THE MOTOR'S MAXIMUM SPEED WILL CAUSE STRANGE RESULTS
-      cmdQueue.add(VEHICLE_SET_MOVE_SPEED, 1500);     // Speed used for forward movements  
+
+      cmdQueue.add(VEHICLE_SET_MOVE_SPEED, 1500);     // Speed used for forward movements (not sure is 1500 is the max)
       cmdQueue.add(VEHICLE_SET_TURN_SPEED, 600);     // Speed used for left or right turns
       cmdQueue.add(VEHICLE_SET_ACCEL, 700);         // smaller is softer; larger is quicker and less accurate moves
 
       //THIS IS WHERE THE CODE IS UPDATED!
-      //Distance is in units
-      //11 units per centimeter
-      // 1/2 Square - 275 Units
-      // 1 Square - 550 Units
-      // 2 Squares - 1100 Units
 
-      //cmdQueue.add(VEHICLE_FORWARD, 550);
-      //cmdQueue.add(VEHICLE_BACKWARD, 550);
-      //cmdQueue.add(VEHICLE_TURN_RIGHT);
-      //cmdQueue.add(VEHICLE_TURN_LEFT);
+      //Distance is in units
+      //10ish units per centimeter
+
+      // 1/2 Square - 300 Units (someone is wrong with the encoder but this is the 1/2 block value)
+      // 1 Square - 500 Units
+      // 2 Squares - 1000 Units
+      // 3 Squares - 1500 Units
+      // x squares - 500*x Units
+
+      //cmdQueue.add(VEHICLE_FORWARD, 500); *1 Full Block Forward (500 per block)*
+      //cmdQueue.add(VEHICLE_BACKWARD, 500); *1 Full Block Backward*
+      //cmdQueue.add(VEHICLE_FORWARD, 300); *Starting Command (roughly half a block forward to enter the track)*
+
+      //cmdQueue.add(VEHICLE_FORWARD, 400); *Command to enter gate (could be lowered, but don't go under like 300)*
+      //cmdQueue.add(VEHICLE_BACKWARD, 400); *Command to reverse out of gate (MUST HAVE THE SAME VALUE AS CORRESPONDING PAIR)*
+
+      //cmdQueue.add(VEHICLE_TURN_RIGHT); *Turn right*
+      //cmdQueue.add(VEHICLE_TURN_LEFT); *Turn left*
 
       cmdQueue.add(VEHICLE_FORWARD, 300);
-      cmdQueue.add(VEHICLE_TURN_RIGHT);
-      cmdQueue.add(VEHICLE_FORWARD, 500);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 500);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 1000);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 500);
-      cmdQueue.add(VEHICLE_TURN_RIGHT);
-      cmdQueue.add(VEHICLE_FORWARD, 400);
-      cmdQueue.add(VEHICLE_BACKWARD, 400);
-      cmdQueue.add(VEHICLE_TURN_RIGHT);
-      cmdQueue.add(VEHICLE_FORWARD, 1450);
-      cmdQueue.add(VEHICLE_TURN_RIGHT);
-      cmdQueue.add(VEHICLE_FORWARD, 1000);
-      cmdQueue.add(VEHICLE_TURN_RIGHT);
-      cmdQueue.add(VEHICLE_FORWARD, 500);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 500);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 400);
-      cmdQueue.add(VEHICLE_BACKWARD, 400);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 500);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 1000);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 500);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 400);
-      cmdQueue.add(VEHICLE_BACKWARD, 400);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 500);
-      cmdQueue.add(VEHICLE_TURN_RIGHT);
-      cmdQueue.add(VEHICLE_FORWARD, 1450);
-      cmdQueue.add(VEHICLE_TURN_LEFT);
-      cmdQueue.add(VEHICLE_FORWARD, 1000);
+
       // This MUST be the last command.  
       cmdQueue.add(VEHICLE_FINISHED);
 
 }
 
-//======================================================================================
+
 // Distance is encoder pulses
 // Speed is encoder pulses per second
 // Accel is encoder pulses per second^2
-//======================================================================================
+
 class MotionLogic
 {
   private:
@@ -276,7 +240,7 @@ class MotionLogic
     inline void incrEncoder() { countEncoder++; };
 
     inline void debugOn() { debugPrint = 1; };   // used this function to turn on debug print statements
-                                                 // recommended to only turn on debug for left or right motor.  NOT both.
+                                                 
     inline int debugState() { return debugPrint; };
 
     MotionLogic() {
@@ -316,13 +280,11 @@ class MotionLogic
       pinPWM = pPWM;
     }
 
-    // This object uses the same value for accelerate and decelerate rate
     void setAccel(long accel) {
       accelRate = accel;
       decelRate = accel;
     }
 
-    // This function must be called to start a motion
     void startMove(int pos, int spd) {
 
       if (spd > 0) {
@@ -452,9 +414,9 @@ class MotionLogic
       long perror = posProfile - countEncoder;
       int serror = speedProfile - speedActual;
     
-          // This program uses a PI loop to control speed
-          // This loop is NOT tuned.  Meaning testing is required to tune the loop
-          // which will provide the best preformance
+          // PI loop to control speed
+          // LOOP IS NOT TUNED YET (THIS MUST BE DONE SOON)
+
       pwmLoopI += serror / 4;
       pwmLoopP = serror / 2; 
         
@@ -491,27 +453,22 @@ class MotionLogic
 MotionLogic mtrLeft;
 MotionLogic mtrRight;
 
-//---------------------------------------------------------------------------------------
 // Interupt function for counting left motor encoder pulses
 void encoderIntLeft()  { 
   mtrLeft.incrEncoder();
 }
 
-//---------------------------------------------------------------------------------------
+
 // Interupt function for counting right motor encoder pulses
 void encoderIntRight()  { 
-  // Accumulate partial pulses
+  // This function uses the rightEncoderScale to *fix* the right motor encoder
+  // This should be updated to match the left encoder when the left motor arrives
   rightEncoderAccum += RIGHT_ENCODER_SCALE;
-
-  // Round to nearest integer
   long scaledCount = (long)(rightEncoderAccum + 0.5);
-
-  // Update the right motor's count
   mtrRight.countEncoder = scaledCount;
 }
 
 
-//---------------------------------------------------------------------------------------
 void setMotorOutputs() {
   if (mtrLeft.getOutputFwd()) digitalWrite(PIN_MTR1_DIR_FWD, HIGH);   
   else                        digitalWrite(PIN_MTR1_DIR_FWD, LOW); 
@@ -523,8 +480,9 @@ void setMotorOutputs() {
   else                         digitalWrite(PIN_MTR2_DIR_REV, LOW); 
 }
 
-//======================================================================================
-// Trigger Sonic range finder
+// Sonic Range Finder Function
+// Will look at this later, sensor is not yet installed but we have it
+
 void triggerRangeFinder() {
     digitalWrite(PIN_SONIC_TRIGGER, LOW);
     delayMicroseconds(20);
@@ -540,7 +498,6 @@ void triggerRangeFinder() {
     //Serial.println(sonicDistance);
 }
 
-//=======================================================================================
 // Used to display fault codes on the built-in LED
 void faultCodeLED(int count) {
   int i = -1;
@@ -560,7 +517,6 @@ void faultCodeLED(int count) {
   }
 }
 
-//=======================================================================================
 // Toggle the Ardunio built in LED each time this function is executed
 void toggleLED() {
   if (flagLED) {                
@@ -572,10 +528,8 @@ void toggleLED() {
   }
 }
 
-//=======================================================================================
-//  This function is called to update the variable information on the display.
-//  Only limited information is updated at a time since the write commands are slow
-//=======================================================================================
+// This function initializes the display but doesn't work yet since the screen is not wired
+
 void initDisplay() {
 
   // Display is 20 characters wide by 4 lines
@@ -598,10 +552,7 @@ void initDisplay() {
 
 }
 
-//=======================================================================================
-//  This function is called to update the variable information on the display.
-//  Only limited information is updated at a time since the write commands are slow
-//=======================================================================================
+// This functions updates the display (once every 20 seconds?)
 void updateDisplay() {
   int cmd;
   char buff[12];
@@ -657,8 +608,9 @@ void updateDisplay() {
     case 3 :
         display.setCursor(4,2);
         display.print(sonicDistance,1);
+        //display.print("cm  ");
         //Probably in mm but need to check
-        display.print("cm  ");
+        display.print("mm  ");
         break;
     case 4 :
         display.setCursor(6,3);
@@ -670,14 +622,11 @@ void updateDisplay() {
         break;
   }
 
-  printStep++;  // increment the print step value to the next sequence step
+  printStep++;  // increment the print step value
   
   toggleLED();
 }
 
-//======================================================================================
-// The setup() is called once at the power up of the Arduino
-//======================================================================================
 void setup() {
 
   rightEncoderAccum = 0.0;
@@ -690,8 +639,9 @@ void setup() {
   Serial.begin(115200); // ADDED
   delay(50); // ADDED
   Serial.println(F("Setup()...")); // ADDED
+  //Above was for debugging the right motor encoder, can probably be removed now?
 
-  // Only uncomment one motor at a time to use the Serial Plotter function to tune the PID loop
+  // Only uncomment one motor at a time to use the Serial Plotter function to tune the PI loop
   //mtrLeft.debugOn();
   //mtrRight.debugOn();
   if (mtrLeft.debugState() || mtrRight.debugState()) {
@@ -760,10 +710,10 @@ void setup() {
 
 }
 
-//======================================================================================
-// The following function will execute then exit.  The Ardunio will constantly call this 
-// function.  The function should not have delays as this will effect the motor's speed.
-//======================================================================================
+
+//Be careful with this function as it manages the motors and movement
+//Do NOT add any delays to this function ever
+
 void loop() {
   long distance;
   int speed;
@@ -804,6 +754,7 @@ void loop() {
     Serial.print(F("  |  PWMLOOPP: "));
     Serial.println(mtrRight.pwmLoopP);*/
     //--- END ADDED
+    //Right motor encoder debugging
 
     msTimerPrint = 0;
   }
@@ -897,7 +848,7 @@ void loop() {
 
     case VEHICLE_TURN_RIGHT :
       if (newCmd) {
-        distance = (ENCODER_COUNTS_90_DEG + (turnCount * 3)); // changed from 7 to 3
+        distance = (ENCODER_COUNTS_90_DEG + (turnCount * 3)); // changed from 7 to 3 (#turnCount#)
         if (turnCount != 2) {
           turnCount++;
         }
@@ -918,7 +869,7 @@ void loop() {
       break;
     case VEHICLE_TURN_LEFT :
       if (newCmd) {
-        distance = (ENCODER_COUNTS_90_DEG - (turnCount * 5) - 15);
+        distance = (ENCODER_COUNTS_90_DEG - (turnCount * 5) - 15); //(#turnCount#)
         if (turnCount != 2) {
           turnCount++;
         }
