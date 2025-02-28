@@ -34,9 +34,11 @@
 #define ENCODER_COUNTS_90_DEG   270   // Number of encoder pulses to make a 90 degree turn
 #define SPEED_MIN               120    // Minimum speed (pulses/second) use at the end of individual moves
 
-#define RIGHT_ENCODER_SCALE 1.17161733572
+//#define RIGHT_ENCODER_SCALE 1.17161733572
+#define RIGHT_ENCODER_SCALE 1.20
 volatile float rightEncoderAccum = 0.0;
-int turnCount = 0;
+int rightTurnCount = 0;
+int leftTurnCount = 0;
 //Above three lines are the current solution for the problematic right motor encoder, a new motor should fix this issue
 //If new motor has working encoder, remove rightEncoderAccum
 
@@ -631,7 +633,8 @@ void setup() {
 
   rightEncoderAccum = 0.0;
   mtrRight.countEncoder = 0;
-  turnCount = 0;
+  rightTurnCount = 0;
+  leftTurnCount = 0;
 
   pinMode(PIN_LED, OUTPUT);
   flagLED = false;
@@ -848,9 +851,11 @@ void loop() {
 
     case VEHICLE_TURN_RIGHT :
       if (newCmd) {
-        distance = (ENCODER_COUNTS_90_DEG + (turnCount * 3)); // changed from 7 to 3 (#turnCount#)
-        if (turnCount != 2) {
-          turnCount++;
+        //distance = (ENCODER_COUNTS_90_DEG + (turnCount * 3)); // change this(#turnCount#)
+        distance = ENCODER_COUNTS_90_DEG + 4;
+        rightTurnCount++;
+        if (rightTurnCount >= 3 && rightTurnCount % 2 == 0) {
+          distance = distance + (rightTurnCount * 1);
         }
         speed = speedTurn;
         mtrLeft.startMove(distance,speed);
@@ -869,9 +874,11 @@ void loop() {
       break;
     case VEHICLE_TURN_LEFT :
       if (newCmd) {
-        distance = (ENCODER_COUNTS_90_DEG - (turnCount * 5) - 15); //(#turnCount#)
-        if (turnCount != 2) {
-          turnCount++;
+        //distance = (ENCODER_COUNTS_90_DEG - (turnCount * 5) - 15); //change this(#turnCount#)
+        distance = ENCODER_COUNTS_90_DEG - 16;
+        leftTurnCount++;
+        if (leftTurnCount >= 3 && leftTurnCount % 2 == 0) {
+          distance = distance - (leftTurnCount * 1.1);
         }
         speed = speedTurn;
         mtrLeft.startMove(distance,speed * -1);
